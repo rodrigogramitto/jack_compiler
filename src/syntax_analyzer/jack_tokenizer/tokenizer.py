@@ -1,6 +1,6 @@
 
 
-class Tokenizer:
+class JackTokenizer:
   def __init__(self):
     return
 

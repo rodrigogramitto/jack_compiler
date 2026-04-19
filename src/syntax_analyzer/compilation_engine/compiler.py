@@ -1,7 +1,8 @@
 
 
-class Compiler:
-  def __init__(self):
+class CompilationEngine:
+  def __init__(self, tokenizer):
+    self.tokenizer = tokenizer
     return
 
   def compile_class(self):

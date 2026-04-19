@@ -1,7 +1,7 @@
 import sys
 import os
 
-from src.syntax_analyzer import jack_analyzer
+from src.syntax_analyzer.jack_analyzer import JackAnalyzer
 
 def main():
   # Expect exactly one argument: the input path
@@ -9,8 +9,8 @@ def main():
     print("Usage: python jack_compiler.py <input path>")
     sys.exit(1)
 
-    input_path = sys.argv[1]
-    jack_analyzer(input_path)
+  input_path = sys.argv[1]
+  JackAnalyzer(input_path)
 
 
 if __name__ == "__main__":
