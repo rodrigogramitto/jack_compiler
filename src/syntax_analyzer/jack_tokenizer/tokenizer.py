@@ -1,4 +1,6 @@
 from src.syntax_analyzer.jack_tokenizer.library.symbols import  SYMBOLS
+from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
+from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
 
 class JackTokenizer:
   def __init__(self, file):
@@ -33,7 +35,11 @@ class JackTokenizer:
       self.cur_token = token
 
   def token_type(self):
-    return
+    if self.cur_token in SYMBOLS:
+      return TokenType.SYMBOL
+    elif self.cur_token in KEYWORDS:
+      return TokenType.KEYWORD
+
 
   def keyword(self):
     return
