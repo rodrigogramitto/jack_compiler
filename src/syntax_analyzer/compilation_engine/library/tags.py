@@ -1,0 +1,4 @@
+
+TAGS = {
+  'class': ['<class>', '</class>']
+}

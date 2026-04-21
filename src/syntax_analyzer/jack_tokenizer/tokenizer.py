@@ -10,9 +10,6 @@ class JackTokenizer:
     self.cursor = 0
     self.content = self.prepare_content()
     self.cur_token = ''
-    while self.has_more_tokens():
-      self.advance()
-      print('Token type: ', self.token_type())
 
   def has_more_tokens(self):
     local_cursor = self.cursor
@@ -137,3 +134,6 @@ class JackTokenizer:
   def is_valid_identifier(self):
     regex = r'^[A-Za-z_][A-Za-z0-9_]*$'
     return bool(re.match(regex, self.cur_token))
+
+  def get_cur_token(self):
+    return self.cur_token

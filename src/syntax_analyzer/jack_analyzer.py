@@ -12,11 +12,11 @@ class JackAnalyzer:
 
   def compile_file(self, file_path):
     file = file_path.resolve()
-    tokenizer = JackTokenizer(file)
-    compilation_engine = CompilationEngine(tokenizer)
     filename = file_path.stem
     output_file = filename + '.xml'
     with open(output_file, "w") as out_file:
+      tokenizer = JackTokenizer(file)
+      compilation_engine = CompilationEngine(tokenizer, out_file)
       compilation_engine.compile_class()
 
   def compile_dir(self, directory):
