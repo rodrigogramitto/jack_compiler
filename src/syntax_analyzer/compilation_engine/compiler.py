@@ -3,6 +3,7 @@
 class CompilationEngine:
   def __init__(self, tokenizer):
     self.tokenizer = tokenizer
+    self.tokenizer.advance()
     return
 
   def compile_class(self):

@@ -1,6 +1,8 @@
 from src.syntax_analyzer.jack_tokenizer.library.symbols import  SYMBOLS
 from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
 from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
+from decimal import Decimal
+import re
 
 class JackTokenizer:
   def __init__(self, file):
@@ -8,8 +10,9 @@ class JackTokenizer:
     self.cursor = 0
     self.content = self.prepare_content()
     self.cur_token = ''
-    self.advance()
-    print("Cur token: ", self.cur_token)
+    while self.has_more_tokens():
+      self.advance()
+      print('Token type: ', self.token_type())
 
   def has_more_tokens(self):
     local_cursor = self.cursor
@@ -20,41 +23,74 @@ class JackTokenizer:
     return False
 
   def advance(self):
+    if self.cursor >= len(self.content):
+      return
+
     cur = self.content[self.cursor]
-    token = ''
-    while cur.isspace():
+
+    # Skip whitespace
+    while self.cursor < len(self.content) and cur.isspace():
       self.cursor += 1
+      if self.cursor >= len(self.content):
+        return
       cur = self.content[self.cursor]
+
+    # Symbol
     if cur in SYMBOLS:
       self.cur_token = cur
-    else:
-      while not cur.isspace() and cur not in SYMBOLS:
+      self.cursor += 1
+      return
+
+    token = ''
+    if cur == '"':
+      token += cur
+      self.cursor += 1
+      while self.cursor < len(self.content):
+        cur = self.content[self.cursor]
+        if cur == '"':
+          token += cur
+          self.cursor += 1
+          break
         token += cur
         self.cursor += 1
+    else:
+      while self.cursor < len(self.content):
         cur = self.content[self.cursor]
-      self.cur_token = token
+        if cur.isspace() or cur in SYMBOLS:
+          break
+        token += cur
+        self.cursor += 1
+
+    self.cur_token = token
 
   def token_type(self):
     if self.cur_token in SYMBOLS:
       return TokenType.SYMBOL
     elif self.cur_token in KEYWORDS:
       return TokenType.KEYWORD
-
+    elif self.cur_token[0] == '"' and self.cur_token[-1] == '"':
+      return TokenType.STRING_CONST
+    elif self.is_int_constant():
+      return TokenType.INT_CONST
+    elif self.is_valid_identifier():
+      return TokenType.IDENTIFIER
+    else:
+      return None
 
   def keyword(self):
-    return
+    return self.cur_token
 
   def symbol(self):
-    return
+    return self.cur_token
 
   def identifier(self):
-    return
+    return self.cur_token
 
   def intval(self):
-    return
+    return float(self.cur_token)
 
   def stringval(self):
-    return
+    return self.cur_token
 
   def prepare_content(self):
     prepared_content = []
@@ -91,4 +127,13 @@ class JackTokenizer:
 
     return prepared_content
 
+  def is_int_constant(self):
+    try:
+      float(self.cur_token)
+      return True
+    except ValueError:
+      return False
 
+  def is_valid_identifier(self):
+    regex = r'^[A-Za-z_][A-Za-z0-9_]*$'
+    return bool(re.match(regex, self.cur_token))
