@@ -136,4 +136,4 @@ class JackTokenizer:
     return bool(re.match(regex, self.cur_token))
 
   def get_cur_token(self):
-    return self.cur_token
+    return self.cur_token.strip()
