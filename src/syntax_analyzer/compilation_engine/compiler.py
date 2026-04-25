@@ -9,6 +9,13 @@ class CompilationEngine:
     self.tokenizer = tokenizer
     self.out_file = out_file
     self.indent_count = 0
+    self.statement_map = {
+      # 'while': self.compile_while,
+      # 'if': self.compile_if,
+      # 'let': self.compile_let,
+      # 'return': self.compile_return,
+      'do': self.compile_do
+    }
     self.tokenizer.advance()
 
   def compile_class(self):
@@ -54,15 +61,6 @@ class CompilationEngine:
     #   ('constructor' | 'function' | 'method')
     #   ('void' | type) subroutineName '('parameterList ')' subroutineBody
 
-    # 1. Write Tag with subroutineDec
-    # 2. Eat the next token expecting it to be keyword constructor, method or function
-    # 3. Eat the type expecting it to be 'void', 'int', 'char', 'boolean' or if it's an identifier then identifier
-    # 4. Eat the subroutine Name (identifier)
-    # 5. tag (
-    # 6. invoke compile parameter list
-    # 7. tag )
-    # 8. invoke compile subroutine body
-    # 9. write closing tag
     self.write_tag(tag='subroutineDec', closing=False, newline=True)
     self.indent_count += 2
 
@@ -78,6 +76,10 @@ class CompilationEngine:
     self.compile_parameter_list()
     self.eat(TokenType.SYMBOL ,'compile_subroutine', ')')
     self.compile_subroutine_body()
+
+    self.write_tag(tag='subroutineDec', closing=True, newline=True)
+    self.indent_count -= 2
+
 
   def compile_parameter_list(self):
     # ( (type varName) (',' type varName)*)?
@@ -100,13 +102,52 @@ class CompilationEngine:
     self.write_tag(tag='parameterList', closing=True, newline=True)
 
   def compile_subroutine_body(self):
-    return
+    # Syntax Rule:
+    # '{' varDec* statements '}'
+    # 2. eat open brace
+    # 3. invoke compile var dec
+    # 4. invoke compile statements
+    # 5. eat close brace
+    # 6. write subroutine closing tag
+    # 7. dedent
+    self.write_tag(tag='subroutineBody', closing=False, newline=True)
+    self.indent_count += 2
+    self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '{')
+
+    self.compile_var_dec()
+    self.compile_statements()
+
+    self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '}')
+    self.indent_count -= 2
+    self.write_tag(tag='subroutineBody', closing=True, newline=True)
+
 
   def compile_var_dec(self):
-    return
+    self.write_tag(tag='varDec', closing=False, newline=True)
+    self.indent_count += 2
+
+    self.eat( TokenType.KEYWORD, 'compile_var_dec', 'var' )
+    if self.tokenizer.token_type() == TokenType.KEYWORD:
+      self.eat( TokenType.KEYWORD, 'compile_var_dec', ['int', 'char', 'bool'] )
+    else:
+      self.eat( TokenType.IDENTIFIER, 'compile_var_dec')
+    self.eat( TokenType.IDENTIFIER, 'compile_var_dec')
+
+    while self.tokenizer.get_cur_token() == ',':
+      self.eat( TokenType.SYMBOL, 'compile_var_dec', ',' )
+      self.eat( TokenType.IDENTIFIER, 'compile_var_dec' )
+
+    self.eat( TokenType.SYMBOL, 'compile_var_dec', ';')
+
+    self.indent_count -= 2
+    self.write_tag(tag='varDec', closing=True, newline=True)
 
   def compile_statements(self):
-    return
+    while self.tokenizer.token_type() == TokenType.KEYWORD:
+      if self.tokenizer.get_cur_token() not in self.statement_map:
+        break
+      else:
+        self.statement_map[self.tokenizer.get_cur_token()]()
 
   def compile_let(self):
     return
@@ -144,7 +185,7 @@ class CompilationEngine:
       raise ValueError("Invalid identifier token: ", token, ' while executing: ', caller)
 
     self.write_tag( TAGS[token_type] )
-    self.out_file.write( ' ' + token )
+    self.out_file.write( ' ' + token + ' ' )
     self.write_tag( TAGS[token_type], True )
 
     if self.tokenizer.has_more_tokens():
