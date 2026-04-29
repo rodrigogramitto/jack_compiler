@@ -114,7 +114,8 @@ class CompilationEngine:
     self.indent_count += 2
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '{')
 
-    self.compile_var_dec()
+    while self.tokenizer.get_cur_token() == 'var':
+      self.compile_var_dec()
     self.compile_statements()
 
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '}')
@@ -159,7 +160,28 @@ class CompilationEngine:
     return
 
   def compile_do(self):
-    return
+    # Syntax rules
+    # 'do' subroutineCall ';'
+
+    self.write_tag(tag='doStatement', closing=False, newline=True)
+    self.indent_count += 2
+
+    self.eat( TokenType.KEYWORD, 'compile_do', 'do')
+
+    self.eat( TokenType.IDENTIFIER, 'compile_do' )
+    print("Token: ", self.tokenizer.get_cur_token())
+
+    if self.tokenizer.get_cur_token() == '.' and self.tokenizer.token_type() == TokenType.SYMBOL:
+        self.eat(TokenType.SYMBOL, 'compile_do', '.')
+        self.eat(TokenType.IDENTIFIER, 'compile_do')
+
+    self.eat(TokenType.SYMBOL, 'compile_do', '(')
+    self.compile_expression_list()
+    self.eat(TokenType.SYMBOL, 'compile_do', ')')
+    self.eat(TokenType.SYMBOL, 'compile_do', ';')
+
+    self.indent_count -= 2
+    self.write_tag(tag='doStatement', closing=True, newline=True)
 
   def compile_return(self):
     return
