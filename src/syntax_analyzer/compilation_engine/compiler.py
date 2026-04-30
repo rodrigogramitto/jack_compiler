@@ -52,9 +52,10 @@ class CompilationEngine:
       self.eat(TokenType.IDENTIFIER, 'compile_class_var_dec')
 
     self.eat(TokenType.SYMBOL, 'compile_class_var_dec', [';'] )
+    self.indent_count -= 2
     self.write_tag(tag='classVarDec', closing=True, newline=True)
 
-    self.indent_count -= 2
+
 
   def compile_subroutine(self):
     # Syntax rule:
@@ -169,7 +170,6 @@ class CompilationEngine:
     self.eat( TokenType.KEYWORD, 'compile_do', 'do')
 
     self.eat( TokenType.IDENTIFIER, 'compile_do' )
-    print("Token: ", self.tokenizer.get_cur_token())
 
     if self.tokenizer.get_cur_token() == '.' and self.tokenizer.token_type() == TokenType.SYMBOL:
         self.eat(TokenType.SYMBOL, 'compile_do', '.')
@@ -193,7 +193,20 @@ class CompilationEngine:
     return
 
   def compile_expression_list(self):
-    return
+    # Syntax Rule:
+    #  (expression (',' expression)* )?
+
+    self.write_tag(tag='compileExpression', closing=False, newline=True)
+    self.indent_count += 2
+
+    if self.tokenizer.get_cur_token() != ')':
+      self.compile_term()
+      while self.tokenizer.get_cur_token() == ',':
+        self.eat(TokenType.SYMBOL, 'compile_expression_list', ',')
+        self.compile_term()
+
+    self.indent_count -= 2
+    self.write_tag(tag='compileExpression', closing=True, newline=True)
 
   # Validates, writes terminal tags and advances
   def eat(self, expect_token_type, caller, expect_token_value=[]):
@@ -215,6 +228,7 @@ class CompilationEngine:
       self.out_file.write('\n')
 
   # writes opening/closing non-terminal tags
+  # todo: fix indentation crapout
   def write_tag(self, tag, closing=False, newline=False):
     xml = '<'
     if closing:

@@ -7,7 +7,7 @@
     <keyword> boolean     </keyword>
     <identifier> test     </identifier>
     <symbol> ;     </symbol>
-    </classVarDec>
+  </classVarDec>
   <subroutineDec>
     <keyword> function     </keyword>
     <keyword> void     </keyword>
@@ -24,3 +24,11 @@
         <identifier> game         </identifier>
         <symbol> ;         </symbol>
       </varDec>
+      <doStatement>
+        <keyword> do         </keyword>
+        <identifier> game         </identifier>
+        <symbol> .         </symbol>
+        <identifier> run         </identifier>
+        <symbol> (         </symbol>
+        <compileExpression>
+        </compileExpression>
