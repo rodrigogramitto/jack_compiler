@@ -2,6 +2,7 @@ from src.syntax_analyzer.compilation_engine.library.tags import TAGS
 from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
 from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
 from src.syntax_analyzer.jack_tokenizer.library.symbols import SYMBOLS
+from src.syntax_analyzer.jack_tokenizer.library.opcodes import OPCODES
 import textwrap
 
 class CompilationEngine:
@@ -35,9 +36,9 @@ class CompilationEngine:
     if self.tokenizer.token_type() == TokenType.KEYWORD and self.tokenizer.get_cur_token() in ['constructor', 'method', 'function']:
       self.compile_subroutine()
 
-    # self.eat(TokenType.SYMBOL ,'compile_class', '}')
-    # self.write_tag(tag='class', closing=True, newline=False)
-    # self.indent_count -= 2
+    self.eat(TokenType.SYMBOL ,'compile_class', '}')
+    self.indent_count -= 2
+    self.write_tag(tag='class', closing=True, newline=False)
 
 
   def compile_class_var_dec(self):
@@ -54,7 +55,6 @@ class CompilationEngine:
     self.eat(TokenType.SYMBOL, 'compile_class_var_dec', [';'] )
     self.indent_count -= 2
     self.write_tag(tag='classVarDec', closing=True, newline=True)
-
 
 
   def compile_subroutine(self):
@@ -78,8 +78,8 @@ class CompilationEngine:
     self.eat(TokenType.SYMBOL ,'compile_subroutine', ')')
     self.compile_subroutine_body()
 
-    self.write_tag(tag='subroutineDec', closing=True, newline=True)
     self.indent_count -= 2
+    self.write_tag(tag='subroutineDec', closing=True, newline=True)
 
 
   def compile_parameter_list(self):
@@ -187,7 +187,17 @@ class CompilationEngine:
     return
 
   def compile_expression(self):
-    return
+    # Syntax rule:
+    # term (op term)*
+    self.write_tag(tag='expression', closing=False, newline=True)
+    self.indent_count += 2
+    self.compile_term()
+    while self.tokenizer.get_cur_token() in OPCODES:
+      self.eat( TokenType.SYMBOL, 'compile_expression')
+      self.compile_term()
+
+    self.indent_count -= 2
+    self.write_tag(tag='expression', closing=True, newline=True)
 
   def compile_term(self):
     return
@@ -196,17 +206,17 @@ class CompilationEngine:
     # Syntax Rule:
     #  (expression (',' expression)* )?
 
-    self.write_tag(tag='compileExpression', closing=False, newline=True)
+    self.write_tag(tag='expressionList', closing=False, newline=True)
     self.indent_count += 2
 
     if self.tokenizer.get_cur_token() != ')':
-      self.compile_term()
+      self.compile_expression()
       while self.tokenizer.get_cur_token() == ',':
         self.eat(TokenType.SYMBOL, 'compile_expression_list', ',')
-        self.compile_term()
+        self.compile_expression()
 
     self.indent_count -= 2
-    self.write_tag(tag='compileExpression', closing=True, newline=True)
+    self.write_tag(tag='expressionList', closing=True, newline=True)
 
   # Validates, writes terminal tags and advances
   def eat(self, expect_token_type, caller, expect_token_value=[]):
