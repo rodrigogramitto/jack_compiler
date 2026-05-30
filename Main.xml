@@ -24,11 +24,42 @@
         <identifier> game         </identifier>
         <symbol> ;         </symbol>
       </varDec>
+      <letStatement>
+        <keyword> let         </keyword>
+        <identifier> game         </identifier>
+        <symbol> =         </symbol>
+        <expression>
+          <term>
+            <identifier> SquareGame             </identifier>
+            <symbol> .             </symbol>
+            <identifier> new             </identifier>
+            <symbol> (             </symbol>
+            <expressionList>
+            </expressionList>
+            <symbol> )             </symbol>
+          </term>
+        </expression>
+        <symbol> ;         </symbol>
+      </letStatement>
       <doStatement>
         <keyword> do         </keyword>
         <identifier> game         </identifier>
         <symbol> .         </symbol>
         <identifier> run         </identifier>
         <symbol> (         </symbol>
-        <compileExpression>
-        </compileExpression>
+        <expressionList>
+        </expressionList>
+        <symbol> )         </symbol>
+        <symbol> ;         </symbol>
+      </doStatement>
+      <doStatement>
+        <keyword> do         </keyword>
+        <identifier> game         </identifier>
+        <symbol> .         </symbol>
+        <identifier> dispose         </identifier>
+        <symbol> (         </symbol>
+        <expressionList>
+        </expressionList>
+        <symbol> )         </symbol>
+        <symbol> ;         </symbol>
+      </doStatement>

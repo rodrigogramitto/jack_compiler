@@ -1,5 +1,6 @@
 from src.syntax_analyzer.jack_tokenizer.library.symbols import  SYMBOLS
 from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
+# from src.syntax_analyzer.jack_tokenizer.library.unaryOp import UNARYOP
 from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
 from decimal import Decimal
 import re
@@ -130,6 +131,9 @@ class JackTokenizer:
       return True
     except ValueError:
       return False
+
+  def is_unaryOpTerm(self):
+    return self.cur_token in ['-', '~']
 
   def is_valid_identifier(self):
     regex = r'^[A-Za-z_][A-Za-z0-9_]*$'

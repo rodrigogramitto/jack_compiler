@@ -13,7 +13,7 @@ class CompilationEngine:
     self.statement_map = {
       # 'while': self.compile_while,
       # 'if': self.compile_if,
-      # 'let': self.compile_let,
+      'let': self.compile_let,
       # 'return': self.compile_return,
       'do': self.compile_do
     }
@@ -152,7 +152,24 @@ class CompilationEngine:
         self.statement_map[self.tokenizer.get_cur_token()]()
 
   def compile_let(self):
-    return
+    self.write_tag(tag='letStatement', closing=False, newline=True)
+    self.indent_count += 2
+    self.eat( TokenType.KEYWORD, 'compile_let')
+    self.eat( TokenType.IDENTIFIER, 'compile_let')
+
+    # Check if array access
+    if self.tokenizer.get_cur_token() == '[':
+      self.eat( TokenType.SYMBOL, 'compile_let', ['['] )
+      self.compile_expression()
+      self.eat( TokenType.SYMBOL, 'compile_let', [']'] )
+
+    self.eat( TokenType.SYMBOL, 'compile_let', ['='] )
+    self.compile_expression()
+    self.eat( TokenType.SYMBOL, 'compile_let', [';'] )
+
+    self.indent_count -= 2
+    self.write_tag(tag='letStatement', closing=True, newline=True)
+
 
   def compile_if(self):
     return
@@ -200,7 +217,41 @@ class CompilationEngine:
     self.write_tag(tag='expression', closing=True, newline=True)
 
   def compile_term(self):
-    return
+    self.write_tag(tag='term', closing=False, newline=True)
+    self.indent_count += 2
+
+    if self.tokenizer.token_type() == TokenType.STRING_CONST:
+      self.eat( TokenType.STRING_CONST, 'compile_term' )
+    elif self.tokenizer.token_type() == TokenType.INT_CONST:
+      self.eat( TokenType.INT_CONST, 'compile_term' )
+    elif self.tokenizer.token_type() == TokenType.KEYWORD:
+      self.eat( TokenType.KEYWORD, 'compile_term' )
+    elif self.tokenizer.is_unaryOpTerm():
+      self.eat( TokenType.KEYWORD, 'compile_term' )
+    elif self.tokenizer.get_cur_token() == '(':
+      self.eat( TokenType.SYMBOL, 'compile_term' )
+      self.compile_expression()
+      self.eat( TokenType.SYMBOL, 'compile_term' )
+    # elif token starts with identifier
+    elif self.tokenizer.token_type() == TokenType.IDENTIFIER:
+      self.eat( TokenType.IDENTIFIER, 'compile_term')
+      if self.tokenizer.get_cur_token() == '[':
+        # ear symbol '['
+        self.eat( TokenType.SYMBOL, 'compile_term', ['['])
+        self.compile_expression()
+        self.eat( TokenType.SYMBOL, 'compile_term', [']'])
+      elif self.tokenizer.get_cur_token() == '.' or self.tokenizer.get_cur_token() == '(':
+
+        if self.tokenizer.get_cur_token() == '.' and self.tokenizer.token_type() == TokenType.SYMBOL:
+            self.eat(TokenType.SYMBOL, 'compile_term', '.')
+            self.eat(TokenType.IDENTIFIER, 'compile_do')
+
+        self.eat(TokenType.SYMBOL, 'compile_do', '(')
+        self.compile_expression_list()
+        self.eat(TokenType.SYMBOL, 'compile_do', ')')
+
+    self.indent_count -= 2
+    self.write_tag(tag='term', closing=True, newline=True)
 
   def compile_expression_list(self):
     # Syntax Rule:
