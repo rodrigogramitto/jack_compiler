@@ -12,9 +12,9 @@ class CompilationEngine:
     self.indent_count = 0
     self.statement_map = {
       # 'while': self.compile_while,
-      # 'if': self.compile_if,
+      'if': self.compile_if,
       'let': self.compile_let,
-      # 'return': self.compile_return,
+      'return': self.compile_return,
       'do': self.compile_do
     }
     self.tokenizer.advance()
@@ -33,13 +33,12 @@ class CompilationEngine:
       self.compile_class_var_dec()
 
     # Recursively invoke subroutine declarations
-    if self.tokenizer.token_type() == TokenType.KEYWORD and self.tokenizer.get_cur_token() in ['constructor', 'method', 'function']:
+    while self.tokenizer.token_type() == TokenType.KEYWORD and self.tokenizer.get_cur_token() in ['constructor', 'method', 'function']:
       self.compile_subroutine()
 
     self.eat(TokenType.SYMBOL ,'compile_class', '}')
     self.indent_count -= 2
     self.write_tag(tag='class', closing=True, newline=False)
-
 
   def compile_class_var_dec(self):
     self.write_tag(tag='classVarDec', closing=False, newline=True)
@@ -55,7 +54,6 @@ class CompilationEngine:
     self.eat(TokenType.SYMBOL, 'compile_class_var_dec', [';'] )
     self.indent_count -= 2
     self.write_tag(tag='classVarDec', closing=True, newline=True)
-
 
   def compile_subroutine(self):
     # Syntax rule:
@@ -81,7 +79,6 @@ class CompilationEngine:
     self.indent_count -= 2
     self.write_tag(tag='subroutineDec', closing=True, newline=True)
 
-
   def compile_parameter_list(self):
     # ( (type varName) (',' type varName)*)?
 
@@ -105,12 +102,6 @@ class CompilationEngine:
   def compile_subroutine_body(self):
     # Syntax Rule:
     # '{' varDec* statements '}'
-    # 2. eat open brace
-    # 3. invoke compile var dec
-    # 4. invoke compile statements
-    # 5. eat close brace
-    # 6. write subroutine closing tag
-    # 7. dedent
     self.write_tag(tag='subroutineBody', closing=False, newline=True)
     self.indent_count += 2
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '{')
@@ -122,7 +113,6 @@ class CompilationEngine:
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '}')
     self.indent_count -= 2
     self.write_tag(tag='subroutineBody', closing=True, newline=True)
-
 
   def compile_var_dec(self):
     self.write_tag(tag='varDec', closing=False, newline=True)
@@ -145,11 +135,17 @@ class CompilationEngine:
     self.write_tag(tag='varDec', closing=True, newline=True)
 
   def compile_statements(self):
+    self.write_tag(tag='statements', closing=False, newline=True)
+    self.indent_count += 2
+
     while self.tokenizer.token_type() == TokenType.KEYWORD:
       if self.tokenizer.get_cur_token() not in self.statement_map:
         break
       else:
         self.statement_map[self.tokenizer.get_cur_token()]()
+
+    self.indent_count -= 2
+    self.write_tag(tag='statements', closing=True, newline=True)
 
   def compile_let(self):
     self.write_tag(tag='letStatement', closing=False, newline=True)
@@ -170,9 +166,27 @@ class CompilationEngine:
     self.indent_count -= 2
     self.write_tag(tag='letStatement', closing=True, newline=True)
 
-
   def compile_if(self):
-    return
+    # Syntax rules
+    # 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
+    self.write_tag(tag='ifStatement', closing=False, newline=True)
+    self.indent_count += 2
+
+    self.eat( TokenType.KEYWORD, 'compile_if', 'if' )
+    self.eat( TokenType.SYMBOL, 'compile_if', '(' )
+    self.compile_expression()
+    self.eat( TokenType.SYMBOL, 'compile_if', ')' )
+    self.eat( TokenType.SYMBOL, 'compile_if', '{' )
+    self.compile_statements()
+    self.eat( TokenType.SYMBOL, 'compile_if', '}' )
+    if self.tokenizer.token_type() == TokenType.KEYWORD:
+      self.eat( TokenType.KEYWORD, 'compile_if', 'else' )
+      self.eat( TokenType.SYMBOL, 'compile_if', '{' )
+      self.compile_statements()
+      self.eat( TokenType.SYMBOL, 'compile_if', '}' )
+
+    self.indent_count -= 2
+    self.write_tag(tag='ifStatement', closing=True, newline=True)
 
   def compile_while(self):
     return
@@ -201,7 +215,16 @@ class CompilationEngine:
     self.write_tag(tag='doStatement', closing=True, newline=True)
 
   def compile_return(self):
-    return
+    self.write_tag(tag='returnStatement', closing=False, newline=True)
+    self.indent_count += 2
+
+    self.eat( TokenType.KEYWORD, 'compile_return')
+    if self.tokenizer.token_type() != TokenType.SYMBOL:
+      self.compile_expression()
+    self.eat( TokenType.SYMBOL, 'compile_return', ';' )
+
+    self.indent_count -= 2
+    self.write_tag(tag='returnStatement', closing=True, newline=True)
 
   def compile_expression(self):
     # Syntax rule:
@@ -227,7 +250,8 @@ class CompilationEngine:
     elif self.tokenizer.token_type() == TokenType.KEYWORD:
       self.eat( TokenType.KEYWORD, 'compile_term' )
     elif self.tokenizer.is_unaryOpTerm():
-      self.eat( TokenType.KEYWORD, 'compile_term' )
+      self.eat( TokenType.SYMBOL, 'compile_term' )
+      self.compile_term()
     elif self.tokenizer.get_cur_token() == '(':
       self.eat( TokenType.SYMBOL, 'compile_term' )
       self.compile_expression()
