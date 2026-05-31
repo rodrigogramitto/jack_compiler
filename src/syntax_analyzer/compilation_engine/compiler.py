@@ -11,7 +11,7 @@ class CompilationEngine:
     self.out_file = out_file
     self.indent_count = 0
     self.statement_map = {
-      # 'while': self.compile_while,
+      'while': self.compile_while,
       'if': self.compile_if,
       'let': self.compile_let,
       'return': self.compile_return,
@@ -189,7 +189,21 @@ class CompilationEngine:
     self.write_tag(tag='ifStatement', closing=True, newline=True)
 
   def compile_while(self):
-    return
+    # Syntax Rule:
+    #  'while' '(' expression ')' '{' statements '}'
+    self.write_tag( tag='whileStatement', closing=False, newline=True )
+    self.indent_count += 2
+
+    self.eat( TokenType.KEYWORD, 'compile_while' )
+    self.eat( TokenType.SYMBOL, 'compile_while', '(' )
+    self.compile_expression()
+    self.eat( TokenType.SYMBOL, 'compile_while', ')' )
+    self.eat( TokenType.SYMBOL, 'compile_while', '{' )
+    self.compile_statements()
+    self.eat( TokenType.SYMBOL, 'compile_while', '}' )
+
+    self.indent_count -= 2
+    self.write_tag( tag='whileStatement', closing=True, newline=True )
 
   def compile_do(self):
     # Syntax rules
@@ -304,9 +318,12 @@ class CompilationEngine:
     elif expect_token_type == TokenType.IDENTIFIER and not self.tokenizer.is_valid_identifier():
       raise ValueError("Invalid identifier token: ", token, ' while executing: ', caller)
 
+    if expect_token_type == TokenType.STRING_CONST:
+      token = token[1:-1]
+
     self.write_tag( TAGS[token_type] )
-    self.out_file.write( ' ' + token + ' ' )
-    self.write_tag( TAGS[token_type], True )
+    self.out_file.write(f' {token} ' )
+    self.write_tag( TAGS[token_type], True, False, False )
 
     if self.tokenizer.has_more_tokens():
       self.tokenizer.advance()
@@ -314,14 +331,15 @@ class CompilationEngine:
 
   # writes opening/closing non-terminal tags
   # todo: fix indentation crapout
-  def write_tag(self, tag, closing=False, newline=False):
+  def write_tag(self, tag, closing=False, newline=False, indent=True):
     xml = '<'
     if closing:
       xml += '/'
     xml += tag + '>'
 
-    indent = ' ' * self.indent_count
-    xml = textwrap.indent(xml, indent)
+    if indent:
+      indent = ' ' * self.indent_count
+      xml = indent + xml
     self.out_file.write( xml )
     if newline:
       self.out_file.write( '\n' )
