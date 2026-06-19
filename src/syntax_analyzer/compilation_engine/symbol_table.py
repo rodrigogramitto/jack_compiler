@@ -45,7 +45,16 @@ class SymbolTable:
       self.localcount += 1
 
   def kind_of(self, name):
-    return self.entries[name].kind
+    if name in self.entries:
+      return self.entries[name]['kind']
+    return None
+
+  def type_of(self, name):
+    if name in self.entries:
+      return self.entries[name]['type']
+    return None
 
   def index_of(self, name):
-    return self.entries[name].index
+    if name in self.entries:
+      return self.entries[name]['index']
+    return None
