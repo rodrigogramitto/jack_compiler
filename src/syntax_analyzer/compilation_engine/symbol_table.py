@@ -1,25 +1,51 @@
 
 class SymbolTable:
   def __init__(self):
+    self.fieldcount    = 0
+    self.staticcount   = 0
+    self.argumentcount = 0
+    self.localcount    = 0
+    self.entries = {}
     return
 
   def reset(self):
-    # called when starting to compile subroutine declaration
-    # Empties symbol table and sets four indices to 0
-    return
+    self.fieldcount    = 0
+    self.staticcount   = 0
+    self.argumentcount = 0
+    self.localcount    = 0
+    self.entries = {}
 
   def define(self, name, type, kind):
-    # Defines (adds to the table) a new variable of the given name, type and kind.
-    # Assigns it to the index value of that kind, and adds 1 to the index
-    return
+    self.entries[name] = {
+      'name': name,
+      'type': type,
+      'kind': kind,
+      'index': self.var_count(kind)
+    }
+    self.increase_count(kind)
 
   def var_count(self, kind):
-    # returns the number of variables of the given kind already defined in the table.
-    return
+    if kind == 'field':
+      return self.fieldcount
+    elif kind == 'static':
+      return self.staticcount
+    elif kind == 'argument':
+      return self.argumentcount
+    elif kind == 'local':
+      return self.localcount
+
+  def increase_count(self, kind):
+    if kind == 'field':
+      self.fieldcount += 1
+    elif kind == 'static':
+      self.staticcount += 1
+    elif kind == 'argument':
+      self.argumentcount += 1
+    elif kind == 'local':
+      self.localcount += 1
 
   def kind_of(self, name):
-    # returns the kind of the named variable
-    return
+    return self.entries[name].kind
 
   def index_of(self, name):
-    # returns the index of the named variable.
+    return self.entries[name].index
