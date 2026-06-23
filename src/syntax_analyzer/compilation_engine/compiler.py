@@ -1,5 +1,6 @@
-from src.syntax_analyzer.compilation_engine.library.tags import TAGS
 from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
+from src.syntax_analyzer.compilation_engine.symbol_table import SymbolTable
+from src.syntax_analyzer.compilation_engine.library.tags import TAGS
 from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
 from src.syntax_analyzer.jack_tokenizer.library.symbols import SYMBOLS
 from src.syntax_analyzer.jack_tokenizer.library.opcodes import OPCODES
@@ -7,6 +8,8 @@ import textwrap
 
 class CompilationEngine:
   def __init__(self, tokenizer, out_file):
+    self.class_symbol_table = SymbolTable()
+    self.subroutine_symbol_table = SymbolTable()
     self.tokenizer = tokenizer
     self.out_file = out_file
     self.indent_count = 0
@@ -20,6 +23,7 @@ class CompilationEngine:
     self.tokenizer.advance()
 
   def compile_class(self):
+    self.class_symbol_table.reset()
     self.write_tag(tag='class', closing=False, newline=True)
     self.indent_count += 2
 
@@ -43,12 +47,27 @@ class CompilationEngine:
   def compile_class_var_dec(self):
     self.write_tag(tag='classVarDec', closing=False, newline=True)
     self.indent_count += 2
+
+    # Peek to use in symbol table declaration
+    name, kind, type, usage = '', '', 'void', 'declared'
+    # In this case we're only declaring but this identifier needs to go in the symbol table here we can gather the kind, type and name and before we eat the token we must insert in class symbol table
+
+    kind = self.tokenizer.get_cur_token()
     self.eat(TokenType.KEYWORD, 'compile_class_var_dec', ['static', 'field'])
+
+    type = self.tokenizer.get_cur_token()
     self.eat(TokenType.KEYWORD, 'compile_class_var_dec', ['var', 'int', 'char', 'boolean'])
+
+    name = self.tokenizer.get_cur_token()
     self.eat(TokenType.IDENTIFIER, 'compile_class_var_dec')
+
+    self.class_symbol_table.define( name, type, kind )
 
     while self.tokenizer.get_cur_token() == ',':
       self.eat(TokenType.SYMBOL, 'compile_class_var_dec', [','] )
+
+      name = self.tokenizer.get_cur_token()
+      self.class_symbol_table.define( name, type, kind )
       self.eat(TokenType.IDENTIFIER, 'compile_class_var_dec')
 
     self.eat(TokenType.SYMBOL, 'compile_class_var_dec', [';'] )
@@ -60,6 +79,7 @@ class CompilationEngine:
     #   ('constructor' | 'function' | 'method')
     #   ('void' | type) subroutineName '('parameterList ')' subroutineBody
 
+    self.subroutine_symbol_table.reset()
     self.write_tag(tag='subroutineDec', closing=False, newline=True)
     self.indent_count += 2
 
@@ -87,6 +107,7 @@ class CompilationEngine:
     if self.tokenizer.get_cur_token() != ')':
 
         if self.tokenizer.token_type() == TokenType.KEYWORD:
+          # In this case we're only declaring but this identifier needs to go in the symbol table here we can gather the kind, type and name and before we eat the token we must insert in class symbol table
           self.eat( TokenType.KEYWORD ,'compile_parameter_list', ['void', 'int', 'char', 'boolean'] )
         else:
           self.eat( TokenType.IDENTIFIER ,'compile_parameter_list' )
@@ -118,15 +139,24 @@ class CompilationEngine:
     self.write_tag(tag='varDec', closing=False, newline=True)
     self.indent_count += 2
 
+    # Peek to use in symbol table declaration
+    name, kind, type, usage = '', '', 'void', 'declared'
+
+    kind = self.tokenizer.get_cur_token()
     self.eat( TokenType.KEYWORD, 'compile_var_dec', 'var' )
-    if self.tokenizer.token_type() == TokenType.KEYWORD:
-      self.eat( TokenType.KEYWORD, 'compile_var_dec', ['int', 'char', 'bool'] )
-    else:
-      self.eat( TokenType.IDENTIFIER, 'compile_var_dec')
+
+    type = self.tokenizer.get_cur_token()
+    self.eat( self.tokenizer.token_type(), 'compile_var_dec' )
+    name = self.tokenizer.get_cur_token()
+    self.subroutine_symbol_table.define( name, type, kind )
+
     self.eat( TokenType.IDENTIFIER, 'compile_var_dec')
 
     while self.tokenizer.get_cur_token() == ',':
       self.eat( TokenType.SYMBOL, 'compile_var_dec', ',' )
+
+      name = self.tokenizer.get_cur_token()
+      self.subroutine_symbol_table.define( name, type, kind )
       self.eat( TokenType.IDENTIFIER, 'compile_var_dec' )
 
     self.eat( TokenType.SYMBOL, 'compile_var_dec', ';')
@@ -310,19 +340,35 @@ class CompilationEngine:
   # Validates, writes terminal tags and advances
   def eat(self, expect_token_type, caller, expect_token_value=[]):
     token, token_type = self.tokenizer.get_cur_token(), self.tokenizer.token_type()
+    usage = 'used' if caller == 'compile_expression' else 'declared'
 
-    if expect_token_value and token not in expect_token_value:
-      raise ValueError("Expected token: ", expect_token_value, ' but received: ', token, ' while executing: ', caller)
-    elif token_type != expect_token_type:
-      raise ValueError("Expected token type: ", expect_token_type, ' but received: ', token_type, ' while executing: ', caller)
-    elif expect_token_type == TokenType.IDENTIFIER and not self.tokenizer.is_valid_identifier():
-      raise ValueError("Invalid identifier token: ", token, ' while executing: ', caller)
+    # if expect_token_value and token not in expect_token_value:
+    #   raise ValueError("Expected token: ", expect_token_value, ' but received: ', token, ' while executing: ', caller)
+    # elif token_type != expect_token_type and :
+    #   raise ValueError("Expected token type: ", expect_token_type, ' but received: ', token_type, ' while executing: ', caller)
+    # elif expect_token_type == TokenType.IDENTIFIER and not self.tokenizer.is_valid_identifier():
+    #   raise ValueError("Invalid identifier token: ", token, ' while executing: ', caller)
 
     if expect_token_type == TokenType.STRING_CONST:
       token = token[1:-1]
 
     self.write_tag( TAGS[token_type] )
-    self.out_file.write(f' {token} ' )
+    if expect_token_type == TokenType.IDENTIFIER and ( caller == 'compile_class_var_dec' or caller == 'compile_var_dec' ):
+      if self.subroutine_symbol_table.get( token ):
+        identifier = self.subroutine_symbol_table.get( token )
+      else:
+        identifier = self.class_symbol_table.get( token )
+
+      if identifier is not None:
+        self.out_file.write(f' name: {identifier['name']} ' )
+        self.out_file.write(f' kind: {identifier['kind']} ' )
+        self.out_file.write(f' index: {identifier['index']} ' )
+        self.out_file.write(f' usage: {usage} ' )
+      else:
+        self.out_file.write(f' {token} ' )
+
+    else:
+      self.out_file.write(f' {token} ' )
     self.write_tag( TAGS[token_type], True, False, False )
 
     if self.tokenizer.has_more_tokens():
