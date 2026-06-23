@@ -376,7 +376,6 @@ class CompilationEngine:
       self.out_file.write('\n')
 
   # writes opening/closing non-terminal tags
-  # todo: fix indentation crapout
   def write_tag(self, tag, closing=False, newline=False, indent=True):
     xml = '<'
     if closing:
