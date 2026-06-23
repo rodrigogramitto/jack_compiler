@@ -31,7 +31,7 @@ class SymbolTable:
       return self.staticcount
     elif kind == 'argument':
       return self.argumentcount
-    elif kind == 'local':
+    elif kind == 'var':
       return self.localcount
 
   def increase_count(self, kind):
@@ -41,7 +41,7 @@ class SymbolTable:
       self.staticcount += 1
     elif kind == 'argument':
       self.argumentcount += 1
-    elif kind == 'local':
+    elif kind == 'var':
       self.localcount += 1
 
   def kind_of(self, name):
@@ -57,4 +57,9 @@ class SymbolTable:
   def index_of(self, name):
     if name in self.entries:
       return self.entries[name]['index']
+    return None
+
+  def get(self, name):
+    if name in self.entries:
+      return self.entries[name]
     return None
