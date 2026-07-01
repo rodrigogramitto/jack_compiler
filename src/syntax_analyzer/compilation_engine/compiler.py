@@ -1,15 +1,18 @@
 from src.syntax_analyzer.jack_tokenizer.library.token_types import TokenType
 from src.syntax_analyzer.compilation_engine.symbol_table import SymbolTable
+from src.code_generator.VMWriter import VMWriter
 from src.syntax_analyzer.compilation_engine.library.tags import TAGS
 from src.syntax_analyzer.jack_tokenizer.library.keywords import KEYWORDS
 from src.syntax_analyzer.jack_tokenizer.library.symbols import SYMBOLS
 from src.syntax_analyzer.jack_tokenizer.library.opcodes import OPCODES
+
 import textwrap
 
 class CompilationEngine:
-  def __init__(self, tokenizer, out_file):
+  def __init__(self, tokenizer, out_file, file_path):
     self.class_symbol_table = SymbolTable()
     self.subroutine_symbol_table = SymbolTable()
+    self.VMWriter = VMWriter(file_path)
     self.tokenizer = tokenizer
     self.out_file = out_file
     self.indent_count = 0

@@ -2,6 +2,7 @@ from pathlib import Path
 from src.syntax_analyzer.jack_tokenizer.tokenizer import JackTokenizer
 from src.syntax_analyzer.compilation_engine.compiler import CompilationEngine
 
+
 class JackAnalyzer:
   def __init__(self, input_path):
     path = Path(input_path)
@@ -14,9 +15,10 @@ class JackAnalyzer:
     file = file_path.resolve()
     filename = file_path.stem
     output_file = filename + '.xml'
+    # TODO: remove xml and premature file creation
     with open(output_file, "w") as out_file:
       tokenizer = JackTokenizer(file)
-      compilation_engine = CompilationEngine(tokenizer, out_file)
+      compilation_engine = CompilationEngine(tokenizer, out_file, file_path)
       compilation_engine.compile_class()
 
   def compile_dir(self, directory):

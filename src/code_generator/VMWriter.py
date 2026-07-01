@@ -1,35 +1,49 @@
 # Generates VM Code
+from pathlib import Path
 
 class VMWriter:
-  def __init__(self):
-    return
+  def __init__(self, file_path):
+    file = Path(file_path)
+    self.out_file = file.with_suffix('.vm').resolve()
+    open(self.out_file, "w").close()
+
+  def print_command(self, command):
+    with open(self.out_file, "a") as f:
+      f.write(command)
+      f.write('\n')
 
   def write_push(self, segment, index):
-    return
+    cmd = f"push {segment} {index}"
+    self.print_command(cmd)
 
   def write_pop(self, segment, index):
-    return
+    cmd = f"pop {segment} {index}"
+    self.print_command(cmd)
 
   def write_arithmetic(self, command):
-    return
+    cmd = f"{command}"
+    self.print_command(cmd)
 
   def write_label(self, label):
-    return
+    cmd = f"label {label}"
+    self.print_command(cmd)
 
   def write_goto(self, label):
-    return
+    cmd = f"goto {label}"
+    self.print_command(cmd)
 
   def write_if(self, label):
-    return
+    cmd = f"if-goto {label}"
+    self.print_command(cmd)
 
   def write_call(self, name, nArgs):
-    return
+    cmd = f"call {name} {nArgs}"
+    self.print_command(cmd)
 
   def write_function(self, name, nVars):
-    return
+    cmd = f"function {name} {nVars}"
+    self.print_command(cmd)
 
   def write_return(self):
-    return
-
-  def close(self):
-    return
+    cmd = f"return"
+    self.print_command(cmd)
