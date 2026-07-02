@@ -33,6 +33,8 @@ class SymbolTable:
       return self.argumentcount
     elif kind == 'var':
       return self.localcount
+    elif kind == 'total':
+      return len(self.entries)
 
   def increase_count(self, kind):
     if kind == 'field':

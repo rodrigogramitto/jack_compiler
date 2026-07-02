@@ -1,6 +1,7 @@
 from pathlib import Path
 from src.syntax_analyzer.jack_tokenizer.tokenizer import JackTokenizer
 from src.syntax_analyzer.compilation_engine.compiler import CompilationEngine
+from src.syntax_analyzer.compilation_engine.compiler_xml import XMLCompilationEngine
 
 
 class JackAnalyzer:
@@ -19,9 +20,12 @@ class JackAnalyzer:
     with open(output_file, "w") as out_file:
       tokenizer = JackTokenizer(file)
       compilation_engine = CompilationEngine(tokenizer, out_file, file_path)
-      compilation_engine.compile_class()
+      xml_compilation_engine = XMLCompilationEngine(tokenizer, out_file, file_path)
+      #compilation_engine.compile_class()
+      xml_compilation_engine.compile_class()
 
   def compile_dir(self, directory):
     # needs to make an output dir too
     for file_path in directory.iterdir():
-      self.compile_file(file_path)
+      if file_path.is_file() and file_path.suffix == '.jack':
+        self.compile_file(file_path)

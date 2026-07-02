@@ -5,7 +5,8 @@ class VMWriter:
   def __init__(self, file_path):
     file = Path(file_path)
     self.out_file = file.with_suffix('.vm').resolve()
-    open(self.out_file, "w").close()
+    with open(self.out_file, "w") as f:
+      return
 
   def print_command(self, command):
     with open(self.out_file, "a") as f:
@@ -21,7 +22,9 @@ class VMWriter:
     self.print_command(cmd)
 
   def write_arithmetic(self, command):
-    cmd = f"{command}"
+    # Todo missing unary codes
+    op = { '+': 'add', '-': 'sub', '&': 'and', '|': 'or', '=': 'eq', '<': 'lt', '>': 'gt'}
+    cmd = f"{op[command]}"
     self.print_command(cmd)
 
   def write_label(self, label):

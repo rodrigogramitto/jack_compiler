@@ -8,7 +8,7 @@ from src.syntax_analyzer.jack_tokenizer.library.opcodes import OPCODES
 
 import textwrap
 
-class CompilationEngine:
+class XMLCompilationEngine:
   def __init__(self, tokenizer, out_file, file_path):
     self.class_symbol_table = SymbolTable()
     self.subroutine_symbol_table = SymbolTable()
@@ -27,8 +27,11 @@ class CompilationEngine:
 
   def compile_class(self):
     self.class_symbol_table.reset()
+    self.write_tag(tag='class', closing=False, newline=True)
+    self.indent_count += 2
 
     # Eat class tokens
+    #self.eat(TokenType.KEYWORD ,'compile_class', ['class'])
     self.eat(TokenType.IDENTIFIER ,'compile_class')
     self.eat(TokenType.SYMBOL ,'compile_class', '{')
 
@@ -41,7 +44,8 @@ class CompilationEngine:
       self.compile_subroutine()
 
     self.eat(TokenType.SYMBOL ,'compile_class', '}')
-
+    self.indent_count -= 2
+    self.write_tag(tag='class', closing=True, newline=False)
 
   def compile_class_var_dec(self):
     self.write_tag(tag='classVarDec', closing=False, newline=True)
@@ -77,7 +81,10 @@ class CompilationEngine:
     # Syntax rule:
     #   ('constructor' | 'function' | 'method')
     #   ('void' | type) subroutineName '('parameterList ')' subroutineBody
+
     self.subroutine_symbol_table.reset()
+    self.write_tag(tag='subroutineDec', closing=False, newline=True)
+    self.indent_count += 2
 
     self.eat( TokenType.KEYWORD ,'compile_subroutine', ['constructor', 'method', 'function'] )
 
@@ -86,17 +93,14 @@ class CompilationEngine:
     else:
       self.eat( TokenType.IDENTIFIER ,'compile_subroutine' )
 
-    fn_identifier = self.tokenizer.get_cur_token()
     self.eat( TokenType.IDENTIFIER ,'compile_subroutine' )
     self.eat(TokenType.SYMBOL ,'compile_subroutine', '(')
     self.compile_parameter_list()
-
-    varcount = self.subroutine_symbol_table.var_count('total')
-    self.VMWriter.write_function( fn_identifier, varcount )
-
     self.eat(TokenType.SYMBOL ,'compile_subroutine', ')')
     self.compile_subroutine_body()
 
+    self.indent_count -= 2
+    self.write_tag(tag='subroutineDec', closing=True, newline=True)
 
   def compile_parameter_list(self):
     # ( (type varName) (',' type varName)*)?
@@ -122,6 +126,8 @@ class CompilationEngine:
   def compile_subroutine_body(self):
     # Syntax Rule:
     # '{' varDec* statements '}'
+    self.write_tag(tag='subroutineBody', closing=False, newline=True)
+    self.indent_count += 2
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '{')
 
     while self.tokenizer.get_cur_token() == 'var':
@@ -129,6 +135,8 @@ class CompilationEngine:
     self.compile_statements()
 
     self.eat( TokenType.SYMBOL, 'compile_subroutine_body', '}')
+    self.indent_count -= 2
+    self.write_tag(tag='subroutineBody', closing=True, newline=True)
 
   def compile_var_dec(self):
     self.write_tag(tag='varDec', closing=False, newline=True)
@@ -160,11 +168,17 @@ class CompilationEngine:
     self.write_tag(tag='varDec', closing=True, newline=True)
 
   def compile_statements(self):
+    self.write_tag(tag='statements', closing=False, newline=True)
+    self.indent_count += 2
+
     while self.tokenizer.token_type() == TokenType.KEYWORD:
       if self.tokenizer.get_cur_token() not in self.statement_map:
         break
       else:
         self.statement_map[self.tokenizer.get_cur_token()]()
+
+    self.indent_count -= 2
+    self.write_tag(tag='statements', closing=True, newline=True)
 
   def compile_let(self):
     self.write_tag(tag='letStatement', closing=False, newline=True)
@@ -227,22 +241,25 @@ class CompilationEngine:
   def compile_do(self):
     # Syntax rules
     # 'do' subroutineCall ';'
+
+    self.write_tag(tag='doStatement', closing=False, newline=True)
+    self.indent_count += 2
+
     self.eat( TokenType.KEYWORD, 'compile_do', 'do')
 
-    fn_name = self.tokenizer.get_cur_token()
     self.eat( TokenType.IDENTIFIER, 'compile_do' )
 
     if self.tokenizer.get_cur_token() == '.' and self.tokenizer.token_type() == TokenType.SYMBOL:
         self.eat(TokenType.SYMBOL, 'compile_do', '.')
-        fn_name += '.' + self.tokenizer.get_cur_token()
         self.eat(TokenType.IDENTIFIER, 'compile_do')
 
     self.eat(TokenType.SYMBOL, 'compile_do', '(')
-    nArgs = self.compile_expression_list()
+    self.compile_expression_list()
     self.eat(TokenType.SYMBOL, 'compile_do', ')')
     self.eat(TokenType.SYMBOL, 'compile_do', ';')
 
-    self.VMWriter.write_call( fn_name, nArgs )
+    self.indent_count -= 2
+    self.write_tag(tag='doStatement', closing=True, newline=True)
 
   def compile_return(self):
     self.write_tag(tag='returnStatement', closing=False, newline=True)
@@ -259,24 +276,23 @@ class CompilationEngine:
   def compile_expression(self):
     # Syntax rule:
     # term (op term)*
+    self.write_tag(tag='expression', closing=False, newline=True)
+    self.indent_count += 2
     self.compile_term()
     while self.tokenizer.get_cur_token() in OPCODES:
-      opcode = self.tokenizer.get_cur_token()
       self.eat( TokenType.SYMBOL, 'compile_expression')
       self.compile_term()
-      if opcode == '*':
-        self.VMWriter.write_call('Math.multiply', 2 )
-      elif opcode == '/':
-        self.VMWriter.write_call('Math.divide', 2 )
-      else:
-        self.VMWriter.write_arithmetic( opcode )
+
+    self.indent_count -= 2
+    self.write_tag(tag='expression', closing=True, newline=True)
 
   def compile_term(self):
+    self.write_tag(tag='term', closing=False, newline=True)
+    self.indent_count += 2
 
     if self.tokenizer.token_type() == TokenType.STRING_CONST:
       self.eat( TokenType.STRING_CONST, 'compile_term' )
     elif self.tokenizer.token_type() == TokenType.INT_CONST:
-      self.VMWriter.write_push('constant', self.tokenizer.get_cur_token())
       self.eat( TokenType.INT_CONST, 'compile_term' )
     elif self.tokenizer.token_type() == TokenType.KEYWORD:
       self.eat( TokenType.KEYWORD, 'compile_term' )
@@ -305,26 +321,29 @@ class CompilationEngine:
         self.compile_expression_list()
         self.eat(TokenType.SYMBOL, 'compile_do', ')')
 
+    self.indent_count -= 2
+    self.write_tag(tag='term', closing=True, newline=True)
 
   def compile_expression_list(self):
     # Syntax Rule:
     #  (expression (',' expression)* )?
-    count = 0
+
+    self.write_tag(tag='expressionList', closing=False, newline=True)
+    self.indent_count += 2
 
     if self.tokenizer.get_cur_token() != ')':
       self.compile_expression()
-      count += 1
       while self.tokenizer.get_cur_token() == ',':
         self.eat(TokenType.SYMBOL, 'compile_expression_list', ',')
         self.compile_expression()
-        count += 1
 
-    return count
-
+    self.indent_count -= 2
+    self.write_tag(tag='expressionList', closing=True, newline=True)
 
   # Validates, writes terminal tags and advances
   def eat(self, expect_token_type, caller, expect_token_value=[]):
     token, token_type = self.tokenizer.get_cur_token(), self.tokenizer.token_type()
+    usage = 'used' if caller == 'compile_expression' else 'declared'
 
     if expect_token_value and token not in expect_token_value:
       raise ValueError("Expected token: ", expect_token_value, ' but received: ', token, ' while executing: ', caller)
@@ -333,8 +352,31 @@ class CompilationEngine:
     elif expect_token_type == TokenType.IDENTIFIER and not self.tokenizer.is_valid_identifier():
       raise ValueError("Invalid identifier token: ", token, ' while executing: ', caller)
 
+    if expect_token_type == TokenType.STRING_CONST:
+      token = token[1:-1]
+
+    self.write_tag( TAGS[token_type] )
+    if expect_token_type == TokenType.IDENTIFIER and ( caller == 'compile_class_var_dec' or caller == 'compile_var_dec' ):
+      if self.subroutine_symbol_table.get( token ):
+        identifier = self.subroutine_symbol_table.get( token )
+      else:
+        identifier = self.class_symbol_table.get( token )
+
+      if identifier is not None:
+        self.out_file.write(f' name: {identifier['name']} ' )
+        self.out_file.write(f' kind: {identifier['kind']} ' )
+        self.out_file.write(f' index: {identifier['index']} ' )
+        self.out_file.write(f' usage: {usage} ' )
+      else:
+        self.out_file.write(f' {token} ' )
+
+    else:
+      self.out_file.write(f' {token} ' )
+    self.write_tag( TAGS[token_type], True, False, False )
+
     if self.tokenizer.has_more_tokens():
       self.tokenizer.advance()
+      self.out_file.write('\n')
 
   # writes opening/closing non-terminal tags
   def write_tag(self, tag, closing=False, newline=False, indent=True):
